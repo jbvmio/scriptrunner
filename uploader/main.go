@@ -70,12 +70,6 @@ func main() {
 		log.Println("No Files to Upload, Exiting ...")
 		os.Exit(0)
 	}
-
-	for _, a := range dirFiles {
-		fmt.Println(a.OutPath)
-	}
-	os.Exit(0)
-
 	client := http.Client{
 		Timeout: time.Minute * 1,
 		Transport: &http.Transport{
@@ -191,7 +185,6 @@ func makeOutPath(dir, path string) string {
 	path = strings.ReplaceAll(path, `\`, `/`)
 	_, root := filepath.Split(dir)
 	p := strings.TrimPrefix(path, dir)
-	fmt.Printf("DIR: %s\tPATH: %s\tROOT: %s\tPATH: %s\n", dir, path, root, p)
 	return filepath.Join(root, p)
 }
 
