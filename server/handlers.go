@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/tidwall/pretty"
@@ -32,8 +33,9 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		dirPath := Q.Get("directory")
 		switch dirPath {
-		case `/`, "":
+		case `/`, `\`, "":
 		default:
+			dirPath = strings.ReplaceAll(dirPath, `\`, `/`)
 			d := filepath.Join(srvFiles, dirPath)
 			err := createDir(d)
 			if err != nil {
