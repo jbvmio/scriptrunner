@@ -12,11 +12,13 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -25,6 +27,8 @@ var (
 	caCertFile      string
 	destinationURL  string
 	uploadDirectory string
+	inDir, outDir   string
+	doExport        bool
 )
 
 func main() {
@@ -34,8 +38,24 @@ func main() {
 	pf.StringVar(&caCertFile, "cacert", "./ca.crt", "Filepath to Signing Certificate CA.")
 	pf.StringVar(&certFile, "cert", "client.crt", "Filepath to Client Certificate.")
 	pf.StringVar(&keyFile, "key", "client.key", "Filepath to Client Key.")
+	pf.StringVar(&inDir, "in", "", "Export: Directory to Search when Exporting Configuration.")
+	pf.StringVar(&outDir, "out", "", "Export: Directory to Export Configuration.")
+	pf.BoolVar(&doExport, "export", false, "Export: Export Configuration")
 	pf.Parse(os.Args[1:])
 	args := pf.Args()
+
+	if doExport {
+		if inDir == "" || outDir == "" {
+			log.Fatalln("Error: Both --in and --out must be defined when exporting")
+		}
+		err := exportConfiguration(inDir, outDir)
+		if err != nil {
+			log.Fatalf("error exporting configuration: %v\n", err)
+		}
+		log.Printf("Successfully Exported Configuration to %s\n", filepath.Join(outDir, `configuration.yaml`))
+		return
+	}
+
 	var dirFiles []DirFile
 	if uploadDirectory != "" {
 		dirFiles = GetAllDirFiles(uploadDirectory)
@@ -113,6 +133,26 @@ uploadDirFiles:
 			fmt.Printf("%s\n", raw)
 		}
 	}
+}
+
+func exportConfiguration(inDir, outDir string) error {
+	files := GetAllDirFiles(inDir)
+	regex := regexp.MustCompile(`config.yaml|detection.(yaml|ps1)|.*\.(exe|EXE|msi|MSI)`)
+	packages := make(packages)
+	for _, f := range files {
+		if regex.MatchString(f.Name) {
+			packages.filter(f.FullPath)
+		}
+	}
+	configs, err := packages.createConfigs()
+	if err != nil {
+		return fmt.Errorf("error creating configs: %w", err)
+	}
+	y, err := yaml.Marshal(configs)
+	if err != nil {
+		return fmt.Errorf("error marshaling configs: %w", err)
+	}
+	return ioutil.WriteFile(filepath.Join(outDir, `configuration.yaml`), y, 0777)
 }
 
 // GetDirFiles retrives all the immediate files within the given directory and returns file mapping

@@ -44,6 +44,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		output := filepath.Join(srvFiles, dirPath, name)
+		output = strings.ReplaceAll(output, `\`, `/`)
 		log.Printf("saving uploaded file %s to %s\n", name, output)
 		switch {
 		case r.Body != nil:
