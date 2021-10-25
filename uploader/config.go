@@ -18,6 +18,7 @@ type config struct {
 	Publisher            string                 `yaml:"publisher"`
 	InstallCommandLine   string                 `yaml:"installCommandLine"`
 	UninstallCommandLine string                 `yaml:"uninstallCommandLine"`
+	RunAsAccount         string                 `yaml:"runAsAccount"`
 	Detection            map[string]interface{} `yaml:"detection"`
 }
 

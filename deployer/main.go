@@ -301,8 +301,8 @@ func (C *context) deployIntuneWin(cfg config, intuneWinFile io.Reader) error {
 		return fmt.Errorf("xmlMeta Err: %w", err)
 	}
 	appReq := msgraph.NewWin32LobAppRequest(xmlMeta)
-	appReq.Notes = makeHash(appReq.DisplayName + cfg.IntuneWinFile)
 	processAppRequest(&appReq, &cfg)
+	appReq.Notes = makeHash(appReq.DisplayName + cfg.IntuneWinFile)
 	C.setDefaults(&appReq)
 	app, err := C.graphClient.CreateWin32LobApp(appReq)
 	if err != nil {
