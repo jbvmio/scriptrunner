@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +26,8 @@ const (
 	manifestFile = `manifest.json`
 	configFile   = `configuration.yaml`
 )
+
+var buildTime time.Time
 
 var (
 	certFile     string
@@ -64,6 +68,7 @@ func main() {
 		}
 	}
 
+	buildTime = time.Now()
 	var HB hbConfig
 	err = HB.readConfig(hbCfg)
 	if err != nil {
@@ -216,6 +221,7 @@ type config struct {
 	Publisher            string                 `yaml:"publisher"`
 	InstallCommandLine   string                 `yaml:"installCommandLine"`
 	UninstallCommandLine string                 `yaml:"uninstallCommandLine"`
+	RunAsAccount         string                 `yaml:"runAsAccount"`
 	Detection            map[string]interface{} `yaml:"detection"`
 	DisplayNamePrefix    string                 `json:"displayNamePrefix"`
 }
@@ -254,12 +260,21 @@ func (C *context) setDefaults(appReq *msgraph.Win32LobAppRequest) {
 	if C.Defaults.DisplayNamePrefix != "" {
 		appReq.DisplayName = C.Defaults.DisplayNamePrefix + appReq.DisplayName
 	}
+	if appReq.DisplayVersion == "" {
+		appReq.DisplayVersion = buildTime.Format(`2006.01.02.150405`)
+	}
 	if appReq.Developer == "" || appReq.Developer == `GoMSGraph` {
 		appReq.Developer = C.Defaults.Developer
 	}
 	if appReq.Publisher == "" || appReq.Publisher == `GoMSGraph` {
 		appReq.Publisher = C.Defaults.Publisher
 	}
+}
+
+func makeHash(val string) string {
+	h := sha1.New()
+	h.Write([]byte(val))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func createContext(tenantID, appID, secretID string, defaults config) (*context, error) {
@@ -286,6 +301,7 @@ func (C *context) deployIntuneWin(cfg config, intuneWinFile io.Reader) error {
 		return fmt.Errorf("xmlMeta Err: %w", err)
 	}
 	appReq := msgraph.NewWin32LobAppRequest(xmlMeta)
+	appReq.Notes = makeHash(appReq.DisplayName + cfg.IntuneWinFile)
 	processAppRequest(&appReq, &cfg)
 	C.setDefaults(&appReq)
 	app, err := C.graphClient.CreateWin32LobApp(appReq)
@@ -322,6 +338,9 @@ func processAppRequest(appReq *msgraph.Win32LobAppRequest, cfg *config) {
 	}
 	if cfg.UninstallCommandLine != "" {
 		appReq.UninstallCommandLine = cfg.UninstallCommandLine
+	}
+	if cfg.RunAsAccount != "" {
+		appReq.InstallExperience.RunAsAccount = cfg.RunAsAccount
 	}
 	if len(cfg.Detection) > 0 {
 		appReq.DetectionRules = []msgraph.Win32LobAppDetection{cfg.Detection}
