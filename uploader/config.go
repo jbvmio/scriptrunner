@@ -37,6 +37,7 @@ func (p *packageContents) createConfig() (*config, error) {
 	intuneWinFile = strings.TrimSuffix(intuneWinFile, `.EXE`)
 	intuneWinFile = strings.TrimSuffix(intuneWinFile, `.msi`)
 	intuneWinFile = strings.TrimSuffix(intuneWinFile, `.MSI`)
+	intuneWinFile = strings.TrimSuffix(intuneWinFile, `.PS1`)
 	intuneWinFile += intuneWinFile + `.intunewin`
 	_, intuneWinFile = filepath.Split(intuneWinFile)
 

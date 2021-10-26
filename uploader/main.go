@@ -137,10 +137,10 @@ uploadDirFiles:
 
 func exportConfiguration(inDir, outDir string) error {
 	files := GetAllDirFiles(inDir)
-	regex := regexp.MustCompile(`config.yaml|detection.(yaml|ps1)|.*\.(exe|EXE|msi|MSI)`)
+	regex := regexp.MustCompile(`src\\[a-zA-Z0-9-_]+\\(config\.yaml|detection\.(yaml|ps1)|[a-zA-Z0-9-_]+\.(exe|EXE|msi|MSI|PS1))$`)
 	packages := make(packages)
 	for _, f := range files {
-		if regex.MatchString(f.Name) {
+		if regex.MatchString(f.FullPath) {
 			packages.filter(f.FullPath)
 		}
 	}
